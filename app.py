@@ -13,7 +13,7 @@ st.set_page_config(
 )
 
 # ---------------------------------------------------------
-# STILE CSS PERSONALIZZATO (Ottimizzato per Mobile e Desktop)
+# STILE CSS PERSONALIZZATO (Alta leggibilità e flessibilità mobile)
 # ---------------------------------------------------------
 st.markdown("""
     <style>
@@ -125,7 +125,7 @@ def inizializza_database():
             "Fornitori Italia": [
                 "Erboristerie specializzate in fitoterapia cinese; Farmacie galeniche autorizzate.",
                 "Erboristerie cliniche; Negozi biologici con reparto erbe.",
-                "Erboristerie di quartione; Store online di fitoterapia.",
+                "Erboristerie di quartiere; Store online di fitoterapia.",
                 "Farmacie con laboratorio galenico; Distributori autorizzati di MTC.",
                 "Erboristerie professionali; Negozi specializzati in alimentazione orientale.",
                 "Erboristerie standard; Negozi di tisane ed erbe sfuse.",
@@ -160,7 +160,7 @@ df_db = pd.read_excel(DB_FILE)
 # ---------------------------------------------------------
 ENCICLOPEDIA_MTC = {
     "occhi": {
-        "sinonimi": ["occhi secchi", "vista debole", "visione offuscata", "occhi arrossati"],
+        "sinonimi": ["occhi secchi", "vista debole", "visione offsucata", "occhi arrossati"],
         "diagnosi": "In MTC, **gli occhi sono l'apertura del Fegato**. La secchezza indica deficit di Yin di Fegato e Reni."
     },
     "fegato": {
@@ -282,7 +282,7 @@ formula_selezionata = st.sidebar.selectbox(
     key=f"formula_{st.session_state.reset_counter}"
 )
 
-# RISOLTO DEFINITIVAMENTE: Estrazione sicura del valore usando .values[0] per evitare l'errore TypeError
+# Estrazione della durata base sicura
 valore_giorni_default = 7
 if formula_selezionata != "-- Seleziona una formula o cerca una patologia --":
     riga_temp = df_db[df_db['Nome Pinyin'] == formula_selezionata]
@@ -305,9 +305,10 @@ st.title("🌿 Studio Medico MTC - Ricettario Digitale")
 if formula_selezionata == "-- Seleziona una formula o cerca una patologia --":
     st.info("👋 Benvenuto. Inserisci una qualsiasi patologia occidentale o un sintomo nella barra laterale a sinistra per attivare in tempo reale il ricettario clinico.")
 else:
-    riga_formula = df_db[df_db['Nome Pinyin'] == formula_selezionata].iloc
+    # CORRETTO CON .iloc[0] PER EVITARE L'ERRORE DI INDICIZZAZIONE DI PANDAS
+    riga_formula = df_db[df_db['Nome Pinyin'] == formula_selezionata].iloc[0]
 
-    # Elaborazione dati ingredienti comune alle schede
+    # Elaborazione dati ingredienti
     ingredienti_raw = str(riga_formula['Ingredienti'])
     prezzi_raw = str(riga_formula['Prezzi Erbe'])
     
@@ -345,7 +346,7 @@ else:
 
     costo_totale_ricetta = sum(costi_erbe)
 
-    # NOVITÀ SMARTPHONE: Uso delle Schede (Tabs) che incolonnano perfettamente su mobile e affiancano su PC
+    # Navigazione responsive a schede (Tabs) per smartphone e PC
     tab1, tab2, tab3 = st.tabs(["📋 Scheda e Diagnosi", "⚖️ Dosaggi e Costi", "🖨️ Stampa Prescrizione"])
 
     # --- TAB 1: SCHEDA FORMULA E DIAGNOSTICA ---
@@ -430,5 +431,5 @@ else:
             use_container_width=True
         )
 
-    # Disclaimer fisso sempre visibile in fondo alle schede
+    # Disclaimer fisso visibile in fondo
     st.markdown(f"<div class='disclaimer-box'>{TESTO_DISCLAIMER}</div>", unsafe_allow_html=True)
