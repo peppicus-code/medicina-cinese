@@ -190,7 +190,7 @@ ENCICLOPEDIA_MTC = {
     },
     "sciatalgia": {
         "sinonimi": ["dolori articolari", "lombare", "freddo", "lombalgia", "mal di schiena", "cervicale", "torcicollo"],
-        "diagnosi": "Ostruzione da **Vento-Freddo-Umidità** (Sindrome Bi) che blocca la circulation nei meridiani."
+        "diagnosi": "Ostruzione da **Vento-Freddo-Umidità** (Sindrome Bi) che blocca la circolazione nei meridiani."
     },
     "ipertensione": {
         "sinonimi": ["pressione alta", "pressione", "acufeni", "ronzio orecchie"],
@@ -240,7 +240,7 @@ def espandi_ricerca(chiave_ricerca):
 if "reset_counter" not in st.session_state:
     st.session_state.reset_counter = 0
 
-# TEXTO DEFINITIVO DEL DISCLAIMER MEDICO LEGALE
+# TESTO DEFINITIVO DEL DISCLAIMER MEDICO LEGALE
 TESTO_DISCLAIMER = (
     "⚠️ NOTA INFORMATIVA E LEGALE: Le informazioni e i dosaggi contenuti in questa applicazione "
     "hanno scopo puramente divulgativo e didattico basato sulla tradizione della Medicina Tradizionale Cinese (MTC). "
@@ -285,11 +285,16 @@ formula_selezionata = st.sidebar.selectbox(
     key=f"formula_{st.session_state.reset_counter}"
 )
 
+# CORREZIONE PARSING DURATA: Try-Except corazzato contro i TypeError delle liste su Cloud
 valore_giorni_default = 7
 if formula_selezionata != "-- Seleziona una formula o cerca una patologia --":
-    riga_temp = df_db[df_db['Nome Pinyin'] == formula_selezionata]
-    if not riga_temp.empty:
-        valore_giorni_default = int(riga_temp['Durata Base Giorni'].values)
+    try:
+        riga_temp = df_db[df_db['Nome Pinyin'] == formula_selezionata]
+        if not riga_temp.empty:
+            valore_estratto = riga_temp['Durata Base Giorni'].values[0]
+            valore_giorni_default = int(valore_estratto)
+    except Exception:
+        valore_giorni_default = 7
 
 giorni_trattamento = st.sidebar.slider(
     "Giorni di trattamento:", 
@@ -307,7 +312,7 @@ st.title("🌿 Studio Medico MTC - Ricettario Digitale")
 if formula_selezionata == "-- Seleziona una formula o cerca una patologia --":
     st.info("👋 Benvenuto. Inserisci una qualsiasi patologia occidentale o un sintomo nella barra laterale a sinistra per attivare in tempo reale il ricettario clinico.")
 else:
-    riga_formula = df_db[df_db['Nome Pinyin'] == formula_selezionata].iloc
+    riga_formula = df_db[df_db['Nome Pinyin'] == formula_selezionata].iloc[0]
 
     col1, col2 = st.columns([1.1, 0.9], gap="large")
 
@@ -395,7 +400,7 @@ else:
     # --- VISUALIZZAZIONE DEL DISCLAIMER LEGALE SULLA PAGINA WEB ---
     st.markdown(f"<div class='disclaimer-box'>{TESTO_DISCLAIMER}</div>", unsafe_allow_html=True)
 
-    # --- FINALIZZAZIONE E STAMPA RICETTA (Flessibile per Mobile) ---
+    # --- FINALIZZAZIONE E STAMPA RICETTA ---
     st.markdown("<hr>", unsafe_allow_html=True)
     
     paziente_nome = st.text_input(
@@ -436,134 +441,3 @@ else:
         mime="text/plain",
         use_container_width=True
     )
-
-if formula_selezionata == "-- Seleziona una formula o cerca una patologia --":
-    st.info("👋 Benvenuto. Inserisci una qualsiasi patologia occidentale o un sintomo nella barra laterale a sinistra per attivare in tempo reale il ricettario clinico.")
-else:
-    riga_formula = df_db[df_db['Nome Pinyin'] == formula_selezionata].iloc[0]
-
-    col1, col2 = st.columns([1.1, 0.9], gap="large")
-
-    # --- COLONNA 1: SCHEDA FORMULA E DIAGNOSTICA ---
-    with col1:
-        st.subheader(f"📋 {riga_formula['Nome Pinyin']} ({riga_formula['Nome Italiano']})")
-        
-        with st.container(height=170):
-            st.markdown(f"**Categoria:** {riga_formula['Categoria']}")
-            st.markdown(f"**Azione:** {riga_formula['Azione Energetica']}")
-            st.markdown(f"**Sintomi:** {riga_formula['Sintomi']}")
-            st.markdown(f"**Preparazione:** {riga_formula['Preparazione']}")
-        
-        st.markdown("### ☯️ Traduzione Diagnostica Orientale")
-        with st.container(height=140):
-            testo_diagnostica = trova_diagnosi_universale(ricerca_input)
-            st.markdown(f"<div class='custom-box'>{testo_diagnostica}</div>", unsafe_allow_html=True)
-
-        st.markdown("### 🏪 Reperibilità dei Componenti")
-        with st.container(height=140):
-            st.markdown(f"**Acquisto:** {riga_formula['Fornitori Italia']}")
-            st.markdown("""
-            * 🍃 **ERBORISTERIE**: Reperibili in estratto secco o radici sfuse presso erboristerie fisiche fornite o store online specializzati in fitoterapia.
-            * 🛒 **SUPERMERCATI**: Alcune radici o estratti base sono presenti nei supermercati biologici o nel reparto integratori alimentari naturali.
-            * 🏬 **NEGOZI SPECIALIZZATI**: Disponibili come radici sfuse tradizionali intere o preparati grezzi presso i supermercati asiatici ed empori orientali.
-            """)
-
-    # --- COLONNA 2: DOSAGGI, METRICHE E GRAFICO COMPATTO ---
-    with col2:
-        st.subheader("⚖️ Dosaggi e Calcolo Costi")
-        
-        ingredienti_raw = str(riga_formula['Ingredienti'])
-        prezzi_raw = str(riga_formula['Prezzi Erbe'])
-        
-        prezzi_dict = {}
-        for p_entry in prezzi_raw.split(','):
-            if ':' in p_entry:
-                k, v = p_entry.split(':')
-                try:
-                    prezzi_dict[k.strip()] = float(v.strip())
-                except ValueError:
-                    pass
-
-        nomi_erbe = []
-        grammi_totali = []
-        grammi_base_lista = []
-        costi_erbe = []
-        lista_ingr = ingredienti_raw.split(',')
-        
-        for ingr in lista_ingr:
-            try:
-                match = re.search(r'([a-zA-Z\s]+)\s*\((\d+)\)', ingr)
-                if match:
-                    erba_nome = match.group(1).strip()
-                    grammi_base = float(match.group(2).strip())
-                    g_tot = grammi_base * giorni_trattamento
-                    prezzo_singolo_g = prezzi_dict.get(erba_nome, 0.05)
-                    costo_parziale = g_tot * prezzo_singolo_g
-                    
-                    nomi_erbe.append(erba_nome)
-                    grammi_base_lista.append(grammi_base)
-                    grammi_totali.append(g_tot)
-                    costi_erbe.append(round(costo_parziale, 2))
-            except Exception:
-                continue
-
-        df_costi_calcolati = pd.DataFrame({
-            "Erba (Pinyin)": nomi_erbe,
-            "Grammi Totali": grammi_totali,
-            "Costo (€)": costi_erbe
-        })
-        
-        st.dataframe(df_costi_calcolati, use_container_width=True, hide_index=True, height=150)
-        
-        costo_totale_ricetta = sum(costi_erbe)
-        st.metric(label=f"Spesa Totale Stimata ({giorni_trattamento} Giorni)", value=f"€ {costo_totale_ricetta:.2f}")
-        
-        if nomi_erbe:
-            df_chart = pd.DataFrame({
-                "Erba": nomi_erbe,
-                "Spesa (€)": costi_erbe
-            }).set_index("Erba")
-            st.bar_chart(df_chart, y="Spesa (€)", color="#0D9488", height=150)
-
-    # --- FINALIZZAZIONE E STAMPA RICETTA INTERA ---
-    st.markdown("<hr style='margin-top:0.2rem; margin-bottom:0.2rem;'>", unsafe_allow_html=True)
-    
-    col_paz, col_btn = st.columns([1.1, 0.9], gap="medium")
-    with col_paz:
-        paziente_nome = st.text_input(
-            "Nome Paziente (Opzionale):", 
-            key=f"paziente_{st.session_state.reset_counter}",
-            label_visibility="collapsed",
-            placeholder="Inserisci Nome e Cognome Paziente..."
-        )
-    with col_btn:
-        testo_stampa = "==================================================\n"
-        testo_stampa += "              RICETTA MEDICINA TRADIZIONALE CINESE\n"
-        testo_stampa += "==================================================\n"
-        testo_stampa += f"Paziente: {paziente_nome if paziente_nome else 'N.D.'}\n"
-        testo_stampa += f"Formula: {riga_formula['Nome Pinyin']} ({riga_formula['Nome Italiano']})\n"
-        testo_stampa += f"Categoria: {riga_formula['Categoria']}\n"
-        testo_stampa += f"Azione Energetica: {riga_formula['Azione Energetica']}\n"
-        testo_stampa += f"Fattore Moltiplicatore Applicato: x{giorni_trattamento}\n\n"
-        testo_stampa += "--------------------------------------------------\n"
-        testo_stampa += "DOSAGGI DEGLI INGREDIENTI CALCOLATI:\n"
-        for i in range(len(nomi_erbe)):
-            testo_stampa += f"- {nomi_erbe[i]}: {grammi_totali[i]:.1f} g (Base giornaliera: {grammi_base_lista[i]:.1f}g)\n"
-        testo_stampa += "--------------------------------------------------\n\n"
-        testo_stampa += "MODALITÀ DI PREPARAZIONE (DECOTTO):\n"
-        testo_stampa += f"{riga_formula['Preparazione']}\n\n"
-        testo_stampa += "REPERIBILITÀ IN ITALIA:\n"
-        testo_stampa += "• **ERBORISTERIE**: Reperibili in estratto secco o radici sfuse presso erboristerie fisiche fornite o store online specializzati in fitoterapia.\n\n"
-        testo_stampa += "• **SUPERMERCATI**: Alcune radici o estratti base sono presenti nei supermercati biologici o nel reparto integratori alimentari naturali.\n\n"
-        testo_stampa += "• **NEGOZI SPECIALIZZATI**: Disponibili come radici sfuse tradizionali intere o preparati grezzi presso i supermercati asiatici ed empori orientali.\n\n"
-        testo_stampa += "==================================================\n"
-        testo_stampa += "Documento stampabile generato dall'applicazione web.\n"
-        testo_stampa += "==================================================\n"
-
-        st.download_button(
-            label="💾 Scarica Ricetta Pronto Stampa (.txt)",
-            data=testo_stampa,
-            file_name=f"ricetta_{formula_selezionata.replace(' ', '_')}.txt",
-            mime="text/plain",
-            use_container_width=True
-        )
