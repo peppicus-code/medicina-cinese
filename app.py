@@ -13,15 +13,15 @@ st.set_page_config(
 )
 
 # ---------------------------------------------------------
-# STILE CSS PERSONALIZZATO (Alta leggibilità e flessibilità mobile)
+# STILE CSS PERSONALIZZATO (Ottimizzato per Mobile e Desktop)
 # ---------------------------------------------------------
 st.markdown("""
     <style>
     .block-container {
         padding-top: 1.5rem !important;
         padding-bottom: 2rem !important;
-        padding-left: 1.5rem !important;
-        padding-right: 1.5rem !important;
+        padding-left: 1.0rem !important;
+        padding-right: 1.0rem !important;
     }
     html, body, [data-testid="stAppViewContainer"] {
         font-size: 16px !important;
@@ -40,7 +40,6 @@ st.markdown("""
         margin-bottom: 10px;
     }
     
-    /* Box Disclaimer Medico Legale */
     .disclaimer-box {
         background-color: #FFFBEB;
         padding: 15px;
@@ -126,7 +125,7 @@ def inizializza_database():
             "Fornitori Italia": [
                 "Erboristerie specializzate in fitoterapia cinese; Farmacie galeniche autorizzate.",
                 "Erboristerie cliniche; Negozi biologici con reparto erbe.",
-                "Erboristerie di quartiere; Store online di fitoterapia.",
+                "Erboristerie di quartione; Store online di fitoterapia.",
                 "Farmacie con laboratorio galenico; Distributori autorizzati di MTC.",
                 "Erboristerie professionali; Negozi specializzati in alimentazione orientale.",
                 "Erboristerie standard; Negozi di tisane ed erbe sfuse.",
@@ -240,14 +239,12 @@ def espandi_ricerca(chiave_ricerca):
 if "reset_counter" not in st.session_state:
     st.session_state.reset_counter = 0
 
-# TESTO DEFINITIVO DEL DISCLAIMER MEDICO LEGALE
+# TESTO DISCLAIMER
 TESTO_DISCLAIMER = (
     "⚠️ NOTA INFORMATIVA E LEGALE: Le informazioni e i dosaggi contenuti in questa applicazione "
     "hanno scopo puramente divulgativo e didattico basato sulla tradizione della Medicina Tradizionale Cinese (MTC). "
     "Non costituiscono in alcun modo prescrizione medica, parere clinico o diagnosi occidentale. "
-    "La fitoterapia cinese non sostituisce le terapie mediche ufficiali. Prima di assumere qualsiasi composto "
-    "o variare il proprio piano terapeutico, è tassativo e obbligatorio consultare il proprio medico curante "
-    "o uno specialista abilitato per verificare l'assenza di controindicazioni o interazioni farmacologiche."
+    "Prima di assumere qualsiasi composto o variare il proprio piano terapeutico, è obbligatorio consultare il proprio medico curante."
 )
 
 # ---------------------------------------------------------
@@ -285,16 +282,12 @@ formula_selezionata = st.sidebar.selectbox(
     key=f"formula_{st.session_state.reset_counter}"
 )
 
-# CORREZIONE PARSING DURATA: Try-Except corazzato contro i TypeError delle liste su Cloud
+# RISOLTO DEFINITIVAMENTE: Estrazione sicura del valore usando .values[0] per evitare l'errore TypeError
 valore_giorni_default = 7
 if formula_selezionata != "-- Seleziona una formula o cerca una patologia --":
-    try:
-        riga_temp = df_db[df_db['Nome Pinyin'] == formula_selezionata]
-        if not riga_temp.empty:
-            valore_estratto = riga_temp['Durata Base Giorni'].values[0]
-            valore_giorni_default = int(valore_estratto)
-    except Exception:
-        valore_giorni_default = 7
+    riga_temp = df_db[df_db['Nome Pinyin'] == formula_selezionata]
+    if not riga_temp.empty:
+        valore_giorni_default = int(riga_temp['Durata Base Giorni'].values[0])
 
 giorni_trattamento = st.sidebar.slider(
     "Giorni di trattamento:", 
@@ -305,139 +298,137 @@ giorni_trattamento = st.sidebar.slider(
 )
 
 # ---------------------------------------------------------
-# LAYOUT PRINCIPALE - TOTALE MOBILE RESPONSIVE
+# LAYOUT PRINCIPALE - OTTIMIZZATO TABS PER MOBILE RESPONSIVE
 # ---------------------------------------------------------
 st.title("🌿 Studio Medico MTC - Ricettario Digitale")
 
 if formula_selezionata == "-- Seleziona una formula o cerca una patologia --":
     st.info("👋 Benvenuto. Inserisci una qualsiasi patologia occidentale o un sintomo nella barra laterale a sinistra per attivare in tempo reale il ricettario clinico.")
 else:
-    riga_formula = df_db[df_db['Nome Pinyin'] == formula_selezionata].iloc[0]
+    riga_formula = df_db[df_db['Nome Pinyin'] == formula_selezionata].iloc
 
-    col1, col2 = st.columns([1.1, 0.9], gap="large")
+    # Elaborazione dati ingredienti comune alle schede
+    ingredienti_raw = str(riga_formula['Ingredienti'])
+    prezzi_raw = str(riga_formula['Prezzi Erbe'])
+    
+    prezzi_dict = {}
+    for p_entry in prezzi_raw.split(','):
+        if ':' in p_entry:
+            k, v = p_entry.split(':')
+            try:
+                prezzi_dict[k.strip()] = float(v.strip())
+            except ValueError:
+                pass
 
-    # --- COLONNA 1: SCHEDA FORMULA E DIAGNOSTICA ---
-    with col1:
-        st.subheader(f"📋 {riga_formula['Nome Pinyin']} ({riga_formula['Nome Italiano']})")
-        
-        with st.container():
-            st.markdown(f"**Categoria:** {riga_formula['Categoria']}")
-            st.markdown(f"**Azione:** {riga_formula['Azione Energetica']}")
-            st.markdown(f"**Sintomi:** {riga_formula['Sintomi']}")
-            st.markdown(f"**Preparazione:** {riga_formula['Preparazione']}")
+    nomi_erbe = []
+    grammi_totali = []
+    grammi_base_lista = []
+    costi_erbe = []
+    lista_ingr = ingredienti_raw.split(',')
+    
+    for ingr in lista_ingr:
+        try:
+            match = re.search(r'([a-zA-Z\s]+)\s*\((\d+)\)', ingr)
+            if match:
+                erba_nome = match.group(1).strip()
+                grammi_base = float(match.group(2).strip())
+                g_tot = grammi_base * giorni_trattamento
+                prezzo_singolo_g = prezzi_dict.get(erba_nome, 0.05)
+                costo_parziale = g_tot * prezzo_singolo_g
+                
+                nomi_erbe.append(erba_nome)
+                grammi_base_lista.append(grammi_base)
+                grammi_totali.append(g_tot)
+                costi_erbe.append(round(costo_parziale, 2))
+        except Exception:
+            continue
+
+    costo_totale_ricetta = sum(costi_erbe)
+
+    # NOVITÀ SMARTPHONE: Uso delle Schede (Tabs) che incolonnano perfettamente su mobile e affiancano su PC
+    tab1, tab2, tab3 = st.tabs(["📋 Scheda e Diagnosi", "⚖️ Dosaggi e Costi", "🖨️ Stampa Prescrizione"])
+
+    # --- TAB 1: SCHEDA FORMULA E DIAGNOSTICA ---
+    with tab1:
+        st.subheader(f"Dettagli Formula: {riga_formula['Nome Pinyin']}")
+        st.markdown(f"**Nome Italiano:** {riga_formula['Nome Italiano']}")
+        st.markdown(f"**Categoria:** {riga_formula['Categoria']}")
+        st.markdown(f"**Azione Energetica:** {riga_formula['Azione Energetica']}")
+        st.markdown(f"**Sintomi Trattati:** {riga_formula['Sintomi']}")
         
         st.markdown("### ☯️ Traduzione Diagnostica Orientale")
-        with st.container():
-            testo_diagnostica = trova_diagnosi_universale(ricerca_input)
-            st.markdown(f"<div class='custom-box'>{testo_diagnostica}</div>", unsafe_allow_html=True)
+        testo_diagnostica = trova_diagnosi_universale(ricerca_input)
+        st.markdown(f"<div class='custom-box'>{testo_diagnostica}</div>", unsafe_allow_html=True)
 
         st.markdown("### 🏪 Reperibilità dei Componenti")
-        with st.container():
-            st.markdown(f"**Acquisto:** {riga_formula['Fornitori Italia']}")
-            st.markdown("""
-            * 🍃 **ERBORISTERIE**: Presso strutture fisiche fornite o store online di fitoterapia.
-            * 🛒 **SUPERMERCATI**: Nei reparti biologici dedicati o integratori naturali.
-            * 🏬 **NEGOZI SPECIALIZZATI**: Presso supermercati asiatici o empori orientali.
-            """)
+        st.markdown(f"**Indicazioni di Acquisto:** {riga_formula['Fornitori Italia']}")
+        st.markdown("""
+        * 🍃 **ERBORISTERIE**: Presso strutture fisiche fornite o store online di fitoterapia.
+        * 🛒 **SUPERMERCATI**: Nei reparti biologici dedicati o integratori naturali.
+        * 🏬 **NEGOZI SPECIALIZZATI**: Presso supermercati asiatici o empori orientali.
+        """)
 
-    # --- COLONNA 2: DOSAGGI, METRICHE E GRAFICO ---
-    with col2:
-        st.subheader("⚖️ Dosaggi e Calcolo Costi")
+    # --- TAB 2: DOSAGGI E CALCOLO COSTI ---
+    with tab2:
+        st.subheader("Calcolo Pesi e Costi Economici")
         
-        ingredienti_raw = str(riga_formula['Ingredienti'])
-        prezzi_raw = str(riga_formula['Prezzi Erbe'])
-        
-        prezzi_dict = {}
-        for p_entry in prezzi_raw.split(','):
-            if ':' in p_entry:
-                k, v = p_entry.split(':')
-                try:
-                    prezzi_dict[k.strip()] = float(v.strip())
-                except ValueError:
-                    pass
-
-        nomi_erbe = []
-        grammi_totali = []
-        grammi_base_lista = []
-        costi_erbe = []
-        lista_ingr = ingredienti_raw.split(',')
-        
-        for ingr in lista_ingr:
-            try:
-                match = re.search(r'([a-zA-Z\s]+)\s*\((\d+)\)', ingr)
-                if match:
-                    erba_nome = match.group(1).strip()
-                    grammi_base = float(match.group(2).strip())
-                    g_tot = grammi_base * giorni_trattamento
-                    prezzo_singolo_g = prezzi_dict.get(erba_nome, 0.05)
-                    costo_parziale = g_tot * prezzo_singolo_g
-                    
-                    nomi_erbe.append(erba_nome)
-                    grammi_base_lista.append(grammi_base)
-                    grammi_totali.append(g_tot)
-                    costi_erbe.append(round(costo_parziale, 2))
-            except Exception:
-                continue
-
         df_costi_calcolati = pd.DataFrame({
             "Erba (Pinyin)": nomi_erbe,
             "Grammi Totali": grammi_totali,
             "Costo (€)": costi_erbe
         })
-        
         st.dataframe(df_costi_calcolati, use_container_width=True, hide_index=True)
         
-        costo_totale_ricetta = sum(costi_erbe)
         st.metric(label=f"Spesa Totale Stimata ({giorni_trattamento} Giorni)", value=f"€ {costo_totale_ricetta:.2f}")
         
         if nomi_erbe:
+            st.markdown("#### Spaccato Spese per Singolo Componente (€)")
             df_chart = pd.DataFrame({
                 "Erba": nomi_erbe,
                 "Spesa (€)": costi_erbe
             }).set_index("Erba")
             st.bar_chart(df_chart, y="Spesa (€)", color="#0D9488")
 
-    # --- VISUALIZZAZIONE DEL DISCLAIMER LEGALE SULLA PAGINA WEB ---
+    # --- TAB 3: STAMPA E DOWNLOAD ---
+    with tab3:
+        st.subheader("Finalizzazione Documento")
+        
+        paziente_nome = st.text_input(
+            "Nome e Cognome Paziente (Opzionale):", 
+            key=f"paziente_{st.session_state.reset_counter}",
+            placeholder="Inserisci il nome..."
+        )
+        
+        testo_stampa = "==================================================\n"
+        testo_stampa += "              RICETTA MEDICINA TRADIZIONALE CINESE\n"
+        testo_stampa += "==================================================\n"
+        testo_stampa += f"Paziente: {paziente_nome if paziente_nome else 'N.D.'}\n"
+        testo_stampa += f"Formula: {riga_formula['Nome Pinyin']} ({riga_formula['Nome Italiano']})\n"
+        testo_stampa += f"Categoria: {riga_formula['Categoria']}\n"
+        testo_stampa += f"Azione Energetica: {riga_formula['Azione Energetica']}\n"
+        testo_stampa += f"Fattore Moltiplicatore Applicato: x{giorni_trattamento}\n\n"
+        testo_stampa += "--------------------------------------------------\n"
+        testo_stampa += "DOSAGGI DEGLI INGREDIENTI CALCOLATI:\n"
+        for i in range(len(nomi_erbe)):
+            testo_stampa += f"- {nomi_erbe[i]}: {grammi_totali[i]:.1f} g (Base giornaliera: {grammi_base_lista[i]:.1f}g)\n"
+        testo_stampa += "--------------------------------------------------\n\n"
+        testo_stampa += "MODALITÀ DI PREPARAZIONE (DECOTTO):\n"
+        testo_stampa += f"{riga_formula['Preparazione']}\n\n"
+        testo_stampa += "REPERIBILITÀ IN ITALIA:\n"
+        testo_stampa += "• ERBORISTERIE: Presso strutture fisiche fornite o store online di fitoterapia.\n"
+        testo_stampa += "• SUPERMERCATI: Nei reparti biologici dedicati o integratori alimentari naturali.\n"
+        testo_stampa += "• NEGOZI SPECIALIZZATI: Presso empori orientali o supermercati asiatici.\n\n"
+        testo_stampa += "--------------------------------------------------\n"
+        testo_stampa += f"{TESTO_DISCLAIMER}\n"
+        testo_stampa += "==================================================\n"
+        
+        st.download_button(
+            label="💾 Scarica Ricetta Pronto Stampa (.txt)",
+            data=testo_stampa,
+            file_name=f"ricetta_{formula_selezionata.replace(' ', '_')}.txt",
+            mime="text/plain",
+            use_container_width=True
+        )
+
+    # Disclaimer fisso sempre visibile in fondo alle schede
     st.markdown(f"<div class='disclaimer-box'>{TESTO_DISCLAIMER}</div>", unsafe_allow_html=True)
-
-    # --- FINALIZZAZIONE E STAMPA RICETTA ---
-    st.markdown("<hr>", unsafe_allow_html=True)
-    
-    paziente_nome = st.text_input(
-        "Nome Paziente (Opzionale):", 
-        key=f"paziente_{st.session_state.reset_counter}",
-        placeholder="Inserisci Nome e Cognome Paziente..."
-    )
-    
-    testo_stampa = "==================================================\n"
-    testo_stampa += "              RICETTA MEDICINA TRADIZIONALE CINESE\n"
-    testo_stampa += "==================================================\n"
-    testo_stampa += f"Paziente: {paziente_nome if paziente_nome else 'N.D.'}\n"
-    testo_stampa += f"Formula: {riga_formula['Nome Pinyin']} ({riga_formula['Nome Italiano']})\n"
-    testo_stampa += f"Categoria: {riga_formula['Categoria']}\n"
-    testo_stampa += f"Azione Energetica: {riga_formula['Azione Energetica']}\n"
-    testo_stampa += f"Fattore Moltiplicatore Applicato: x{giorni_trattamento}\n\n"
-    testo_stampa += "--------------------------------------------------\n"
-    testo_stampa += "DOSAGGI DEGLI INGREDIENTI CALCOLATI:\n"
-    for i in range(len(nomi_erbe)):
-        testo_stampa += f"- {nomi_erbe[i]}: {grammi_totali[i]:.1f} g (Base giornaliera: {grammi_base_lista[i]:.1f}g)\n"
-    testo_stampa += "--------------------------------------------------\n\n"
-    testo_stampa += "MODALITÀ DI PREPARAZIONE (DECOTTO):\n"
-    testo_stampa += f"{riga_formula['Preparazione']}\n\n"
-    testo_stampa += "REPERIBILITÀ IN ITALIA:\n"
-    testo_stampa += "• ERBORISTERIE: Reperibili in estratto secco o radici sfuse presso erboristerie fisiche fornite o store online specializzati in fitoterapia.\n\n"
-    testo_stampa += "• SUPERMERCATI: Alcune radici o estratti base sono presenti nei supermercati biologici o nel reparto integratori alimentari naturali.\n\n"
-    testo_stampa += "• NEGOZI SPECIALIZZATI: Disponibili come radici sfuse tradizionali intere o preparati grezzi presso i supermercati asiatici ed empori orientali.\n\n"
-    testo_stampa += "--------------------------------------------------\n"
-    testo_stampa += f"{TESTO_DISCLAIMER}\n"
-    testo_stampa += "==================================================\n"
-    testo_stampa += "Documento stampabile generato dall'applicazione web.\n"
-    testo_stampa += "==================================================\n"
-
-    st.download_button(
-        label="💾 Scarica Ricetta Pronto Stampa (.txt)",
-        data=testo_stampa,
-        file_name=f"ricetta_{formula_selezionata.replace(' ', '_')}.txt",
-        mime="text/plain",
-        use_container_width=True
-    )
