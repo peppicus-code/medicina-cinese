@@ -13,30 +13,47 @@ st.set_page_config(
 )
 
 # ---------------------------------------------------------
-# STILE CSS PERSONALIZZATO (Compattazione layout anti-scroll)
+# STILE CSS PERSONALIZZATO (Alta leggibilità e flessibilità mobile)
 # ---------------------------------------------------------
 st.markdown("""
     <style>
     .block-container {
         padding-top: 1.5rem !important;
-        padding-bottom: 0rem !important;
-        padding-left: 3rem !important;
-        padding-right: 3rem !important;
+        padding-bottom: 2rem !important;
+        padding-left: 1.5rem !important;
+        padding-right: 1.5rem !important;
     }
     html, body, [data-testid="stAppViewContainer"] {
-        font-size: 17px !important;
+        font-size: 16px !important;
     }
-    h1 { font-size: 2.2rem !important; color: #1E3A8A !important; margin-bottom: 0.5rem !important; }
-    h2 { font-size: 1.7rem !important; color: #0D9488 !important; }
+    h1 { font-size: 2.0rem !important; color: #1E3A8A !important; margin-bottom: 0.5rem !important; }
+    h2 { font-size: 1.5rem !important; color: #0D9488 !important; }
     h3 { font-size: 1.3rem !important; color: #4338CA !important; margin-top: 0.5rem !important; margin-bottom: 0.5rem !important; }
     p, li, label { font-size: 1.1rem !important; line-height: 1.5 !important; }
     .stMetric { background-color: #F0FDF4; padding: 10px; border-radius: 8px; border: 1px solid #BBF7D0; }
     
     .custom-box {
         background-color: #F8FAFC;
-        padding: 10px;
+        padding: 12px;
         border-radius: 6px;
         border: 1px solid #E2E8F0;
+        margin-bottom: 10px;
+    }
+    
+    /* Box Disclaimer Medico Legale */
+    .disclaimer-box {
+        background-color: #FFFBEB;
+        padding: 15px;
+        border-radius: 6px;
+        border: 1px solid #FCD34D;
+        margin-top: 15px;
+        margin-bottom: 15px;
+        font-size: 0.95rem !important;
+        color: #78350F;
+    }
+    
+    [data-testid="stDataFrame"] {
+        width: 100% !important;
     }
     </style>
 """, unsafe_allow_html=True)
@@ -120,13 +137,13 @@ def inizializza_database():
             ],
             "Preparazione": [
                 "1. In 500ml di acqua fredda per 15 minuti.\n2. Portare a ebollizione e cuocere a fuoco lento per 40 minuti fino a dimezzare il liquido.\n3. Filtrare e bere tiepido.",
-                "1. Mettere in ammollo Shi Gao per 10 minuti separatamente.\n2. Far bollire Shi Gao per 10 informazioni, poi aggiungere le altre erbe e cuocere per 20 minuti.\n3. Filtrare.",
+                "1. Mettere in ammollo Shi Gao per 10 minuti separatamente.\n2. Far bollire Shi Gao per 10 minuti, poi aggiungere le altre erbe e cuocere per 20 minuti.\n3. Filtrare.",
                 "1. Mettere in ammollo le erbe in 400ml di acqua fredda.\n2. Portare a ebollizione a fuoco moderato per 25 minuti.\n3. Consumare caldo lontano dai pasti.",
                 "1. Bollire le radici dure in 500ml d'acqua per 35 minuti.\n2. Aggiungere le erbe rimanenti e proseguire per 10 minuti.\n3. Filtrare.",
                 "1. Immergere in 600ml di acqua fredda.\n2. Cuocere a fuoco lento per 45 minuti per estrarre le sostanze tonificanti.\n3. Filtrare.",
                 "1. Portare l'acqua a ebollizione.\n2. Versare le erbe e far bollire per massimo 10-15 minuti (cottura breve per oli essenziali).\n3. Filtrare.",
                 "1. Bollire le cortecce e radici in 700ml d'acqua a fuoco basso per 50 minuti.\n2. Filtrare il decotto ottenuto e consumarlo in due dosi.",
-                "1. Cuocere in 500ml d'acqua a fuoco medio-basso per 40 informazioni.\n2. Filtrare il liquido residuo e berlo tiepido.",
+                "1. Cuocere in 500ml d'acqua a fuoco medio-basso per 40 minuti.\n2. Filtrare il liquido residuo e berlo tiepido.",
                 "1. Cuocere la Ban Xia trattata e il Chen Pi insieme per 30 minuti in 400ml d'acqua.\n2. Filtrare accuratamente prima del consumo.",
                 "1. Preparare il decotto cuocendo a fuoco controllato per 30 minuti.\n2. Assumere l'estratto liquido 1 ora prima di coricarsi."
             ]
@@ -140,7 +157,7 @@ inizializza_database()
 df_db = pd.read_excel(DB_FILE)
 
 # ---------------------------------------------------------
-# 2. DIZIONARIO ENCICLOPEDICO ESTESO CON NUOVI DISTURBI
+# 2. DIZIONARIO ENCICLOPEDICO INTERNO
 # ---------------------------------------------------------
 ENCICLOPEDIA_MTC = {
     "occhi": {
@@ -173,7 +190,7 @@ ENCICLOPEDIA_MTC = {
     },
     "sciatalgia": {
         "sinonimi": ["dolori articolari", "lombare", "freddo", "lombalgia", "mal di schiena", "cervicale", "torcicollo"],
-        "diagnosi": "Ostruzione da **Vento-Freddo-Umidità** (Sindrome Bi) che blocca la circolazione nei meridiani."
+        "diagnosi": "Ostruzione da **Vento-Freddo-Umidità** (Sindrome Bi) che blocca la circulation nei meridiani."
     },
     "ipertensione": {
         "sinonimi": ["pressione alta", "pressione", "acufeni", "ronzio orecchie"],
@@ -189,15 +206,15 @@ ENCICLOPEDIA_MTC = {
     },
     "mestruazioni": {
         "sinonimi": ["mestruazioni dolorose", "ciclo irregolare", "sindrome premestruale", "ciclo scarso", "ciclo"],
-        "diagnosi": "I dolori e le irregolarità legati al **Ciclo Mestruale** derivano da una **Stasi di Sangue e Qi di Fegato**. Il Fegato immagazzina il Sangue; se l'energia si blocca, il flusso diventa doloroso, scuro o irregolare. La formula muove il sangue e decongestiona il bacino."
+        "diagnosi": "I dolori legati al **Ciclo Mestruale** derivano da una **Stasi di Sangue e Qi di Fegato**. La formula sblocca il flusso ematico."
     },
     "mal di testa": {
         "sinonimi": ["emicrania da stress", "mal di testa da tensione", "cefalea", "cefalea iniziale"],
-        "diagnosi": "Il **Mal di testa** (Cefalea) può derivare da una risalita dello Yang di Fegato (tipo pulsante e laterale) o da un attacco di Vento Esterno (tipo tensivo o frontale). La formula purifica il calore in alto e sblocca i meridiani cranici."
+        "diagnosi": "Il **Mal di testa** può derivare da una risalita dello Yang di Fegato o da un attacco di Vento Esterno."
     },
     "crampi muscolari": {
         "sinonimi": ["crampi muscolari", "spasmi", "contrazioni", "rigidità nucale"],
-        "diagnosi": "I **Crampi muscolari** indicano che il **Sangue del Fegato non nutre i tendini** ('Il Fegato governa i tendini'). Quando i tessuti rimangono asciutti e privi di nutrimento ematico, si contraggono dolorosamente. La formula nutre il sangue per ammorbidire i muscoli."
+        "diagnosi": "I **Crampi** indicano che il **Sangue del Fegato non nutre i tendini**. La formula idrata le fibre muscolari."
     }
 }
 
@@ -223,6 +240,16 @@ def espandi_ricerca(chiave_ricerca):
 if "reset_counter" not in st.session_state:
     st.session_state.reset_counter = 0
 
+# TEXTO DEFINITIVO DEL DISCLAIMER MEDICO LEGALE
+TESTO_DISCLAIMER = (
+    "⚠️ NOTA INFORMATIVA E LEGALE: Le informazioni e i dosaggi contenuti in questa applicazione "
+    "hanno scopo puramente divulgativo e didattico basato sulla tradizione della Medicina Tradizionale Cinese (MTC). "
+    "Non costituiscono in alcun modo prescrizione medica, parere clinico o diagnosi occidentale. "
+    "La fitoterapia cinese non sostituisce le terapie mediche ufficiali. Prima di assumere qualsiasi composto "
+    "o variare il proprio piano terapeutico, è tassativo e obbligatorio consultare il proprio medico curante "
+    "o uno specialista abilitato per verificare l'assenza di controindicazioni o interazioni farmacologiche."
+)
+
 # ---------------------------------------------------------
 # INTERFACCIA UTENTE - SIDEBAR
 # ---------------------------------------------------------
@@ -232,11 +259,10 @@ if st.sidebar.button("🔄 Azzera Tutto"):
     st.session_state.reset_counter += 1
 
 ricerca_input = st.sidebar.text_input(
-    "Cerca sintomo o patologia (es: mestruazioni, mal di testa, crampi muscolari, colon):", 
+    "Cerca sintomo o patologia (es: mestruazioni, mal di testa, crampi, colon):", 
     key=f"ricerca_{st.session_state.reset_counter}"
 )
 
-# Filtro formule dinamico
 formule_filtrate = df_db
 if ricerca_input:
     termini_espanditi = espandi_ricerca(ricerca_input)
@@ -259,15 +285,14 @@ formula_selezionata = st.sidebar.selectbox(
     key=f"formula_{st.session_state.reset_counter}"
 )
 
-# NOVITÀ: Calcolo e aggiornamento automatico della durata corretta basata sul database
 valore_giorni_default = 7
 if formula_selezionata != "-- Seleziona una formula o cerca una patologia --":
     riga_temp = df_db[df_db['Nome Pinyin'] == formula_selezionata]
     if not riga_temp.empty:
-        valore_giorni_default = int(riga_temp['Durata Base Giorni'].values[0])
+        valore_giorni_default = int(riga_temp['Durata Base Giorni'].values)
 
 giorni_trattamento = st.sidebar.slider(
-    "Giorni di trattamento calcolati automaticamente:", 
+    "Giorni di trattamento:", 
     min_value=1, 
     max_value=14, 
     value=valore_giorni_default,
@@ -275,9 +300,142 @@ giorni_trattamento = st.sidebar.slider(
 )
 
 # ---------------------------------------------------------
-# LAYOUT PRINCIPALE - FISSO ANTI-SCROLL
+# LAYOUT PRINCIPALE - TOTALE MOBILE RESPONSIVE
 # ---------------------------------------------------------
 st.title("🌿 Studio Medico MTC - Ricettario Digitale")
+
+if formula_selezionata == "-- Seleziona una formula o cerca una patologia --":
+    st.info("👋 Benvenuto. Inserisci una qualsiasi patologia occidentale o un sintomo nella barra laterale a sinistra per attivare in tempo reale il ricettario clinico.")
+else:
+    riga_formula = df_db[df_db['Nome Pinyin'] == formula_selezionata].iloc
+
+    col1, col2 = st.columns([1.1, 0.9], gap="large")
+
+    # --- COLONNA 1: SCHEDA FORMULA E DIAGNOSTICA ---
+    with col1:
+        st.subheader(f"📋 {riga_formula['Nome Pinyin']} ({riga_formula['Nome Italiano']})")
+        
+        with st.container():
+            st.markdown(f"**Categoria:** {riga_formula['Categoria']}")
+            st.markdown(f"**Azione:** {riga_formula['Azione Energetica']}")
+            st.markdown(f"**Sintomi:** {riga_formula['Sintomi']}")
+            st.markdown(f"**Preparazione:** {riga_formula['Preparazione']}")
+        
+        st.markdown("### ☯️ Traduzione Diagnostica Orientale")
+        with st.container():
+            testo_diagnostica = trova_diagnosi_universale(ricerca_input)
+            st.markdown(f"<div class='custom-box'>{testo_diagnostica}</div>", unsafe_allow_html=True)
+
+        st.markdown("### 🏪 Reperibilità dei Componenti")
+        with st.container():
+            st.markdown(f"**Acquisto:** {riga_formula['Fornitori Italia']}")
+            st.markdown("""
+            * 🍃 **ERBORISTERIE**: Presso strutture fisiche fornite o store online di fitoterapia.
+            * 🛒 **SUPERMERCATI**: Nei reparti biologici dedicati o integratori naturali.
+            * 🏬 **NEGOZI SPECIALIZZATI**: Presso supermercati asiatici o empori orientali.
+            """)
+
+    # --- COLONNA 2: DOSAGGI, METRICHE E GRAFICO ---
+    with col2:
+        st.subheader("⚖️ Dosaggi e Calcolo Costi")
+        
+        ingredienti_raw = str(riga_formula['Ingredienti'])
+        prezzi_raw = str(riga_formula['Prezzi Erbe'])
+        
+        prezzi_dict = {}
+        for p_entry in prezzi_raw.split(','):
+            if ':' in p_entry:
+                k, v = p_entry.split(':')
+                try:
+                    prezzi_dict[k.strip()] = float(v.strip())
+                except ValueError:
+                    pass
+
+        nomi_erbe = []
+        grammi_totali = []
+        grammi_base_lista = []
+        costi_erbe = []
+        lista_ingr = ingredienti_raw.split(',')
+        
+        for ingr in lista_ingr:
+            try:
+                match = re.search(r'([a-zA-Z\s]+)\s*\((\d+)\)', ingr)
+                if match:
+                    erba_nome = match.group(1).strip()
+                    grammi_base = float(match.group(2).strip())
+                    g_tot = grammi_base * giorni_trattamento
+                    prezzo_singolo_g = prezzi_dict.get(erba_nome, 0.05)
+                    costo_parziale = g_tot * prezzo_singolo_g
+                    
+                    nomi_erbe.append(erba_nome)
+                    grammi_base_lista.append(grammi_base)
+                    grammi_totali.append(g_tot)
+                    costi_erbe.append(round(costo_parziale, 2))
+            except Exception:
+                continue
+
+        df_costi_calcolati = pd.DataFrame({
+            "Erba (Pinyin)": nomi_erbe,
+            "Grammi Totali": grammi_totali,
+            "Costo (€)": costi_erbe
+        })
+        
+        st.dataframe(df_costi_calcolati, use_container_width=True, hide_index=True)
+        
+        costo_totale_ricetta = sum(costi_erbe)
+        st.metric(label=f"Spesa Totale Stimata ({giorni_trattamento} Giorni)", value=f"€ {costo_totale_ricetta:.2f}")
+        
+        if nomi_erbe:
+            df_chart = pd.DataFrame({
+                "Erba": nomi_erbe,
+                "Spesa (€)": costi_erbe
+            }).set_index("Erba")
+            st.bar_chart(df_chart, y="Spesa (€)", color="#0D9488")
+
+    # --- VISUALIZZAZIONE DEL DISCLAIMER LEGALE SULLA PAGINA WEB ---
+    st.markdown(f"<div class='disclaimer-box'>{TESTO_DISCLAIMER}</div>", unsafe_allow_html=True)
+
+    # --- FINALIZZAZIONE E STAMPA RICETTA (Flessibile per Mobile) ---
+    st.markdown("<hr>", unsafe_allow_html=True)
+    
+    paziente_nome = st.text_input(
+        "Nome Paziente (Opzionale):", 
+        key=f"paziente_{st.session_state.reset_counter}",
+        placeholder="Inserisci Nome e Cognome Paziente..."
+    )
+    
+    testo_stampa = "==================================================\n"
+    testo_stampa += "              RICETTA MEDICINA TRADIZIONALE CINESE\n"
+    testo_stampa += "==================================================\n"
+    testo_stampa += f"Paziente: {paziente_nome if paziente_nome else 'N.D.'}\n"
+    testo_stampa += f"Formula: {riga_formula['Nome Pinyin']} ({riga_formula['Nome Italiano']})\n"
+    testo_stampa += f"Categoria: {riga_formula['Categoria']}\n"
+    testo_stampa += f"Azione Energetica: {riga_formula['Azione Energetica']}\n"
+    testo_stampa += f"Fattore Moltiplicatore Applicato: x{giorni_trattamento}\n\n"
+    testo_stampa += "--------------------------------------------------\n"
+    testo_stampa += "DOSAGGI DEGLI INGREDIENTI CALCOLATI:\n"
+    for i in range(len(nomi_erbe)):
+        testo_stampa += f"- {nomi_erbe[i]}: {grammi_totali[i]:.1f} g (Base giornaliera: {grammi_base_lista[i]:.1f}g)\n"
+    testo_stampa += "--------------------------------------------------\n\n"
+    testo_stampa += "MODALITÀ DI PREPARAZIONE (DECOTTO):\n"
+    testo_stampa += f"{riga_formula['Preparazione']}\n\n"
+    testo_stampa += "REPERIBILITÀ IN ITALIA:\n"
+    testo_stampa += "• ERBORISTERIE: Reperibili in estratto secco o radici sfuse presso erboristerie fisiche fornite o store online specializzati in fitoterapia.\n\n"
+    testo_stampa += "• SUPERMERCATI: Alcune radici o estratti base sono presenti nei supermercati biologici o nel reparto integratori alimentari naturali.\n\n"
+    testo_stampa += "• NEGOZI SPECIALIZZATI: Disponibili come radici sfuse tradizionali intere o preparati grezzi presso i supermercati asiatici ed empori orientali.\n\n"
+    testo_stampa += "--------------------------------------------------\n"
+    testo_stampa += f"{TESTO_DISCLAIMER}\n"
+    testo_stampa += "==================================================\n"
+    testo_stampa += "Documento stampabile generato dall'applicazione web.\n"
+    testo_stampa += "==================================================\n"
+
+    st.download_button(
+        label="💾 Scarica Ricetta Pronto Stampa (.txt)",
+        data=testo_stampa,
+        file_name=f"ricetta_{formula_selezionata.replace(' ', '_')}.txt",
+        mime="text/plain",
+        use_container_width=True
+    )
 
 if formula_selezionata == "-- Seleziona una formula o cerca una patologia --":
     st.info("👋 Benvenuto. Inserisci una qualsiasi patologia occidentale o un sintomo nella barra laterale a sinistra per attivare in tempo reale il ricettario clinico.")
